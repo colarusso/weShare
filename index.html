@@ -109,17 +109,21 @@
         let timers = {
             player1: {
                 name: "Person 1",
-                time: 10800, // seconds
+                time: 7200,
                 interval: null,
                 startTime: null
             },
             player2: {
                 name: "Person 2",
-                time: 10800, // seconds
+                time: 7200,
                 interval: null,
                 startTime: null
             }
         };
+
+        function saveTimers() {
+            localStorage.setItem("timers", JSON.stringify(timers));
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
             if(localStorage.getItem("timers")) {
@@ -148,7 +152,7 @@
         });
 
         window.onbeforeunload = () => {
-            localStorage.setItem("timers", JSON.stringify(timers));
+            saveTimers();
         };
 
         function toggleTimer(player) {
@@ -159,6 +163,7 @@
                 timers[player].interval = null;
                 timers[player].startTime = null;
                 document.getElementById(`button${player === "player1" ? 1 : 2}`).innerText = "Start";
+                saveTimers();
             } else {
                 if (timers[player].time <= 0) return;
 
@@ -172,6 +177,7 @@
                 timers[player].startTime = Date.now();
                 startTimer(player);
                 document.getElementById(`button${player === "player1" ? 1 : 2}`).innerText = "Pause";
+                saveTimers();
             }
         }
 
@@ -200,6 +206,7 @@
                     timers[player].startTime = null;
                     document.getElementById(`button${player === "player1" ? 1 : 2}`).innerText = "Start";
                 }
+                saveTimers();
             }
         }
 
@@ -208,14 +215,15 @@
             if (newName !== null && newName.trim() !== "") {
                 timers[player].name = newName.trim();
                 document.getElementById(`name${player === "player1" ? 1 : 2}`).innerText = newName.trim();
+                saveTimers();
             }
         }
 
         function resetTimers() {
             clearInterval(timers.player1.interval);
             clearInterval(timers.player2.interval);
-            timers.player1.time = 10800; // seconds
-            timers.player2.time = 10800; // seconds
+            timers.player1.time = 7200;
+            timers.player2.time = 7200;
             timers.player1.interval = null;
             timers.player2.interval = null;
             timers.player1.startTime = null;
@@ -224,6 +232,7 @@
             updateDisplay("player2");
             document.getElementById("button1").innerText = "Start";
             document.getElementById("button2").innerText = "Start";
+            saveTimers();
         }
 
         function resetAll() {
