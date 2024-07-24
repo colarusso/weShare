@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>weShare</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+            background-color: #f0f0f0;
+        }
+        .timer-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .timer {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 150px;
+        }
+        .timer h2 {
+            margin: 0 0 20px 0;
+            cursor: pointer;
+        }
+        .timer button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            border: none;
+            background: #007BFF;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .timer button:disabled {
+            background: #ccc;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #reset-time-button, #reset-all-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #reset-time-button {
+            background: #28a745;
+            color: white;
+        }
+        #reset-all-button {
+            background: #dc3545;
+            color: white;
+        }
+        @media (max-width: 600px) {
+            .timer {
+                width: 100%;
+            }
+        }
+        @media (max-width: 150px) {
+            .button-container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h2 style="margin: 0;">weShare</h2>
+    <p style="margin-bottom: 30px;">
+        Help two people fairly share a resource by keeping track of each person's trun.
+    </p>
+    <div class="timer-container">
+        <div class="timer" id="timer1">
+            <h2 id="name1" onclick="editName('player1')">Person 1</h2>
+            <div id="time1">02:00:00</div>
+            <button id="button1" onclick="toggleTimer('player1')">Start</button>
+            <button onclick="editTime('player1')">Edit</button>
+        </div>
+        <div class="timer" id="timer2">
+            <h2 id="name2" onclick="editName('player2')">Person 2</h2>
+            <div id="time2">02:00:00</div>
+            <button id="button2" onclick="toggleTimer('player2')">Start</button>
+            <button onclick="editTime('player2')">Edit</button>
+        </div>
+    </div>
+    <div class="button-container">
+        <button id="reset-time-button" onclick="resetTimers()">Reset Time</button>
+        <button id="reset-all-button" onclick="resetAll()">Reset All</button>
+    </div>
+
+    <script>
+        let timers = {
+            player1: {
+                name: "Person 1",
+                time: 10800, // seconds
+                interval: null,
+                startTime: null
+            },
+            player2: {
+                name: "Person 2",
+                time: 10800, // seconds
+                interval: null,
+                startTime: null
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if(localStorage.getItem("timers")) {
+                timers = JSON.parse(localStorage.getItem("timers"));
+                const now = Date.now();
+                for (let player of ['player1', 'player2']) {
+                    if (timers[player].startTime) {
+                        const elapsed = Math.floor((now - timers[player].startTime) / 1000);
+                        timers[player].time -= elapsed;
+                        if (timers[player].time <= 0) {
+                            timers[player].time = 0;
+                        }
+                    }
+                }
+                updateDisplay("player1");
+                updateDisplay("player2");
+                if (timers.player1.startTime && timers.player1.time > 0) {
+                    startTimer("player1");
+                }
+                if (timers.player2.startTime && timers.player2.time > 0) {
+                    startTimer("player2");
+                }
+            }
+            document.getElementById("name1").innerText = timers.player1.name;
+            document.getElementById("name2").innerText = timers.player2.name;
+        });
+
+        window.onbeforeunload = () => {
+            localStorage.setItem("timers", JSON.stringify(timers));
+        };
+
+        function toggleTimer(player) {
+            const otherPlayer = player === "player1" ? "player2" : "player1";
+
+            if (timers[player].interval) {
+                clearInterval(timers[player].interval);
+                timers[player].interval = null;
+                timers[player].startTime = null;
+                document.getElementById(`button${player === "player1" ? 1 : 2}`).innerText = "Start";
+            } else {
+                if (timers[player].time <= 0) return;
+
+                if (timers[otherPlayer].interval) {
+                    clearInterval(timers[otherPlayer].interval);
+                    timers[otherPlayer].interval = null;
+                    timers[otherPlayer].startTime = null;
+                    document.getElementById(`button${otherPlayer === "player1" ? 1 : 2}`).innerText = "Start";
+                }
+
+                timers[player].startTime = Date.now();
+                startTimer(player);
+                document.getElementById(`button${player === "player1" ? 1 : 2}`).innerText = "Pause";
+            }
+        }
+
+        function startTimer(player) {
+            timers[player].interval = setInterval(() => {
+                timers[player].time--;
+                updateDisplay(player);
+
+                if (timers[player].time <= 0) {
+                    clearInterval(timers[player].interval);
+                    timers[player].interval = null;
+                    timers[player].time = 0;
+                    document.getElementById(`button${player === "player1" ? 1 : 2}`).innerText = "Start";
+                }
+            }, 1000);
+        }
+
+        function editTime(player) {
+            const newTime = prompt("Enter new time in minutes:");
+            if (newTime !== null && !isNaN(newTime) && newTime >= 0) {
+                timers[player].time = parseInt(newTime) * 60;
+                updateDisplay(player);
+                if (timers[player].interval) {
+                    clearInterval(timers[player].interval);
+                    timers[player].interval = null;
+                    timers[player].startTime = null;
+                    document.getElementById(`button${player === "player1" ? 1 : 2}`).innerText = "Start";
+                }
+            }
+        }
+
+        function editName(player) {
+            const newName = prompt("Enter new name for " + timers[player].name + ":");
+            if (newName !== null && newName.trim() !== "") {
+                timers[player].name = newName.trim();
+                document.getElementById(`name${player === "player1" ? 1 : 2}`).innerText = newName.trim();
+            }
+        }
+
+        function resetTimers() {
+            clearInterval(timers.player1.interval);
+            clearInterval(timers.player2.interval);
+            timers.player1.time = 10800; // seconds
+            timers.player2.time = 10800; // seconds
+            timers.player1.interval = null;
+            timers.player2.interval = null;
+            timers.player1.startTime = null;
+            timers.player2.startTime = null;
+            updateDisplay("player1");
+            updateDisplay("player2");
+            document.getElementById("button1").innerText = "Start";
+            document.getElementById("button2").innerText = "Start";
+        }
+
+        function resetAll() {
+            localStorage.removeItem("timers");
+            timers.player1.name = "Person 1";
+            timers.player2.name = "Person 2";
+            resetTimers();
+            document.getElementById("name1").innerText = timers.player1.name;
+            document.getElementById("name2").innerText = timers.player2.name;
+        }
+
+        function updateDisplay(player) {
+            const hours = Math.floor(timers[player].time / 3600).toString().padStart(2, "0");
+            const minutes = Math.floor((timers[player].time % 3600) / 60).toString().padStart(2, "0");
+            const seconds = (timers[player].time % 60).toString().padStart(2, "0");
+            document.getElementById(`time${player === "player1" ? 1 : 2}`).innerText = `${hours}:${minutes}:${seconds}`;
+        }
+    </script>
+</body>
+</html>
